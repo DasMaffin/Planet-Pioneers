@@ -3,7 +3,8 @@ using UnityEngine;
 
 public class PhysicsController : MonoBehaviour
 {
-    public Transform centerOfMass;
+    public Transform feet;
+    public Transform head;
 
     private Rigidbody myRB;
 
@@ -14,12 +15,32 @@ public class PhysicsController : MonoBehaviour
 
     private void Update()
     {
-        foreach(GravityMesh gravityMesh in GetGravityMeshesInRadius(centerOfMass.position, 10f))
+        foreach(GravityMesh gravityMesh in GetGravityMeshesInRadius(feet.position, 10f))
         {
-            Vector3 nearestVertex = gravityMesh.NearestVertexTo(centerOfMass.position);
-            Debug.DrawLine(centerOfMass.position, nearestVertex, Color.red);
+            // Find the nearest vertex on the gravity mesh
+            Vector3 nearestVertex = gravityMesh.NearestVertexTo(feet.position);
 
-            myRB.AddForce((nearestVertex - centerOfMass.position).normalized * 10f);
+            // Draw a line for debugging purposes
+            Debug.DrawLine(feet.position, nearestVertex, Color.red);
+
+            // Calculate the direction from the parent (character's body) to the nearest vertex
+            Vector3 directionToVertex = (nearestVertex - feet.position).normalized;
+
+            // Apply a force to the Rigidbody to move the character towards the nearest vertex
+            myRB.AddForce(directionToVertex * 10f);
+
+            // Move the parent object (character body) towards the nearest vertex
+            transform.position = nearestVertex;
+
+            // Optionally adjust the parent object's rotation to face the nearest vertex
+            Vector3 directionToFace = nearestVertex - head.position;
+            Quaternion targetRotation = Quaternion.LookRotation(directionToFace);
+
+            // Smoothly rotate the parent object to face the direction
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * 5f);
+
+            // Optionally adjust the head's rotation to smoothly face the direction as well
+            head.rotation = Quaternion.Slerp(head.rotation, targetRotation, Time.deltaTime * 5f);
         }
     }
 
